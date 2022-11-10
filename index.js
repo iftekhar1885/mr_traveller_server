@@ -51,6 +51,26 @@ async function run (){
         const services = await cursor.limit(3).toArray();
         res.send(services);
        });
+
+
+       app.post('/addservices', async(req,res) =>{
+        const addservice = req.body;
+        const result = await addServiceCollection.insertOne(addservice);
+        res.send(result);
+     });
+
+     app.get('/addservices', async(req, res) =>{
+     
+        let query = {};
+        if(req.query.email){
+            query= {
+                email: req.query.email
+            }
+        }
+        const cursor = addServiceCollection.find(query);
+        const totalService = await cursor.toArray();
+        res.send(totalService);
+     })
        app.get('/service', async(req, res) =>{
         const query = {}
         const cursor = serviceCollection.find(query);
@@ -108,11 +128,11 @@ async function run (){
         const result = await reviewCollection.deleteOne(query);
         res.send(result);
      })
-     app.post('/addservice', async(req,res) =>{
-        const addservice = req.body;
-        const result = await addServiceCollection.insertOne(addservice);
-        res.send(result);
-     });
+    //  app.post('/addservice', async(req,res) =>{
+    //     const addservice = req.body;
+    //     const result = await addServiceCollection.insertOne(addservice);
+    //     res.send(result);
+    //  });
 
     }
     finally{
