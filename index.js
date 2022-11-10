@@ -58,6 +58,12 @@ async function run (){
         const result = await addServiceCollection.insertOne(addservice);
         res.send(result);
      });
+     app.delete('/addservices/:id', async(req, res) =>{
+        const id = req.params.id;
+        const query = { _id: ObjectId(id)};
+        const result = await addServiceCollection.deleteOne(query);
+        res.send(result);
+     })
 
      app.get('/addservices', async(req, res) =>{
      
@@ -128,11 +134,7 @@ async function run (){
         const result = await reviewCollection.deleteOne(query);
         res.send(result);
      })
-    //  app.post('/addservice', async(req,res) =>{
-    //     const addservice = req.body;
-    //     const result = await addServiceCollection.insertOne(addservice);
-    //     res.send(result);
-    //  });
+
 
     }
     finally{
