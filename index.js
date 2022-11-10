@@ -1,6 +1,7 @@
 const express = require('express');
 
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const {  ObjectId } = require('bson');
 require ('dotenv').config();
@@ -16,16 +17,44 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 console.log(uri);
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJWT(req, res, next){
+   const authHeader = req.headers.authorization;
+   if(!authHeader){
+    res.status(401).send({message: 'unauthorized access'})
+   }
+    const token = authHeader.split(' ')[1]
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(error, decoded){
+        if(error){
+            res.status(401).send({message: 'unauthorized access'})
+        }
+        req.decoded = decoded;
+        next();
+    })
+
+}
 
 async function run (){
     try{
        const serviceCollection = client.db('MrTraveller').collection('services');
        
        const reviewCollection = client.db('MrTraveller').collection('reviews');
+       const addServiceCollection = client.db('MrTraveller').collection('addService')
+
+       app.post('/jwt', (req, res) =>{
+        const user = req.body;
+        const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10h'});
+        res.send({token})
+       });
        app.get('/services', async(req, res) =>{
         const query = {}
         const cursor = serviceCollection.find(query);
         const services = await cursor.limit(3).toArray();
+        res.send(services);
+       });
+       app.get('/service', async(req, res) =>{
+        const query = {}
+        const cursor = serviceCollection.find(query);
+        const services = await cursor.toArray();
         res.send(services);
        });
        app.get('/services/:id', async(req, res) =>{
@@ -37,7 +66,14 @@ async function run (){
 
     //    review api
 
-    app.get('/reviews', async (req, res) =>{
+    app.get('/reviews',verifyJWT, async (req, res) =>{
+        const decoded = req.decoded;
+
+        console.log('inside orders api', decoded);
+
+        if(decoded.email !== req.query.email){
+            res.status(403).send({message: 'unauthorized access'})
+        }
         let query =  {};
          if(req.query.email){
             query = {
@@ -72,6 +108,11 @@ async function run (){
         const result = await reviewCollection.deleteOne(query);
         res.send(result);
      })
+     app.post('/addservice', async(req,res) =>{
+        const addservice = req.body;
+        const result = await addServiceCollection.insertOne(addservice);
+        res.send(result);
+     });
 
     }
     finally{
@@ -88,3 +129,4 @@ app.get('/', (req, res) =>{
 app.listen(port, () =>{
     console.log(`Mr Traveller running on ${port}`);
 })
+module.exports = app;
